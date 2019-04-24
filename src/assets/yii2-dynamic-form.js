@@ -130,9 +130,9 @@
                 $elem.closest('.' + widgetOptions.widgetContainer).find(widgetOptions.widgetBody).append($newclone);
             }
 
-            _updateAttributes(widgetOptions);
-            _restoreSpecialJs(widgetOptions);
-            _fixFormValidaton(widgetOptions);
+            _updateAttributes(widgetOptions, $newclone);
+            _restoreSpecialJs(widgetOptions, $newclone);
+            _fixFormValidaton(widgetOptions, $newclone);
             $('.' + widgetOptions.widgetContainer).triggerHandler(events.afterInsert, $newclone);
         } else {
             // trigger a custom event for hooking
@@ -198,10 +198,11 @@
             var eventResult = $('.' + widgetOptions.widgetContainer).triggerHandler(events.beforeDelete, $todelete);
             if (eventResult !== false) {
                 _removeValidations($todelete, widgetOptions, count);
+                var $widgetBody = $todelete.closest(widgetOptions.widgetBody);
                 $todelete.remove();
-                _updateAttributes(widgetOptions);
-                _restoreSpecialJs(widgetOptions);
-                _fixFormValidaton(widgetOptions);
+                _updateAttributes(widgetOptions, $widgetBody);
+                _restoreSpecialJs(widgetOptions, $widgetBody);
+                _fixFormValidaton(widgetOptions, $widgetBody);
                 $('.' + widgetOptions.widgetContainer).triggerHandler(events.afterDelete);
             }
         }
@@ -227,10 +228,11 @@
 
                     widgetsOptions = widgetsOptions.reverse();
                     for (var i = identifiers.length - 1; i >= 1; i--) {
-						if (typeof widgetsOptions[i] !== "undefined") {
-							identifiers[i] = $elem.closest(widgetsOptions[i].widgetItem).index();
-						}
-                        //$(".kv-plugin-loading").addClass("hide");
+                        if (typeof widgetsOptions[i] !== "undefined") {
+                            identifiers[i] = $elem.closest(widgetsOptions[i].widgetItem).index();
+                        }
+                        // old trick
+                        $(".kv-plugin-loading").addClass("hide");
                     }
                 }
 
@@ -284,12 +286,15 @@
         return name;
     };
 
-    var _updateAttributes = function(widgetOptions) {
+    var _updateAttributes = function(widgetOptions, $updatedItem) {
         var widgetOptionsRoot = _getWidgetOptionsRoot(widgetOptions);
 
         $(widgetOptionsRoot.widgetItem).each(function(index) {
             var $item = $(this);
-            $(this).find('*').each(function() {
+            if( $updatedItem !== undefined ) {
+                $item = $item.is($updatedItem) ? $updatedItem : $item.find($updatedItem);
+            }
+            $item.find('[id],[name]').each(function() {
                 // update "id" attribute
                 _updateAttrID($(this), index);
 
@@ -317,10 +322,10 @@
         }
     };
 
-    var _fixFormValidaton = function(widgetOptions) {
+    var _fixFormValidaton = function(widgetOptions, $updatedItem) {
         var widgetOptionsRoot = _getWidgetOptionsRoot(widgetOptions);
 
-        $(widgetOptionsRoot.widgetBody).find('input, textarea, select').each(function() {
+        ($updatedItem ? $updatedItem : $(widgetOptionsRoot.widgetBody)).find('input, textarea, select').each(function() {
             var id   = $(this).attr('id');
             var name = $(this).attr('name');
 
@@ -357,11 +362,12 @@
         $elem.depdrop(configDepdrop);
     };
 
-    var _restoreSpecialJs = function(widgetOptions) {
+    var _restoreSpecialJs = function(widgetOptions, $updatedItem) {
         var widgetOptionsRoot = _getWidgetOptionsRoot(widgetOptions);
+        var $widgetItem = $updatedItem ? $updatedItem : $(widgetOptionsRoot.widgetItem);
 
         // "jquery.inputmask"
-        var $hasInputmask = $(widgetOptionsRoot.widgetItem).find('[data-plugin-inputmask]');
+        var $hasInputmask = $widgetItem.find('[data-plugin-inputmask]');
         if ($hasInputmask.length > 0) {
             $hasInputmask.each(function() {
                 $(this).inputmask('remove');
@@ -370,7 +376,7 @@
         }
 
         // "kartik-v/yii2-widget-datepicker"
-        var $hasDatepicker = $(widgetOptionsRoot.widgetItem).find('[data-krajee-kvdatepicker]');
+        var $hasDatepicker = $widgetItem.find('[data-krajee-kvdatepicker]');
         if ($hasDatepicker.length > 0) {
             $hasDatepicker.each(function() {
                 $(this).parent().removeData().kvDatepicker('remove');
@@ -379,7 +385,7 @@
         }
 
         // "kartik-v/yii2-widget-timepicker"
-        var $hasTimepicker = $(widgetOptionsRoot.widgetItem).find('[data-krajee-timepicker]');
+        var $hasTimepicker = $widgetItem.find('[data-krajee-timepicker]');
         if ($hasTimepicker.length > 0) {
             $hasTimepicker.each(function() {
                 $(this).removeData().off();
@@ -390,7 +396,7 @@
         }
 
         // "kartik-v/yii2-money"
-        var $hasMaskmoney = $(widgetOptionsRoot.widgetItem).find('[data-krajee-maskMoney]');
+        var $hasMaskmoney = $widgetItem.find('[data-krajee-maskMoney]');
         if ($hasMaskmoney.length > 0) {
             $hasMaskmoney.each(function() {
                 $(this).parent().find('input').removeData().off();
@@ -408,7 +414,7 @@
         }
 
         // "kartik-v/yii2-widget-fileinput"
-        var $hasFileinput = $(widgetOptionsRoot.widgetItem).find('[data-krajee-fileinput]');
+        var $hasFileinput = $widgetItem.find('[data-krajee-fileinput]');
         if ($hasFileinput.length > 0) {
             $hasFileinput.each(function() {
                 $(this).fileinput(eval($(this).attr('data-krajee-fileinput')));
@@ -416,74 +422,74 @@
         }
 
         // "kartik-v/yii2-widget-touchspin"
-        var $hasTouchSpin = $(widgetOptionsRoot.widgetItem).find('[data-krajee-TouchSpin]');
+        var $hasTouchSpin = $widgetItem.find('[data-krajee-TouchSpin]');
         if ($hasTouchSpin.length > 0) {
             $hasTouchSpin.each(function() {
                 $(this).TouchSpin('destroy');
                 $(this).TouchSpin(eval($(this).attr('data-krajee-TouchSpin')));
             });
         }
-		
-		// "kartik-v/yii2-widget-typehead"
-        var $hasTypehead = $(widgetOptionsRoot.widgetItem).find('[data-krajee-typeahead]');
+
+        // "kartik-v/yii2-widget-typehead"
+        var $hasTypehead = $widgetItem.find('[data-krajee-typeahead]');
         if ($hasTypehead.length > 0) {
             $hasTypehead.each(function() {
-				
-				$(this).typeahead('destroy');
-				var isTemplate = $(this).attr('data-template');
-				var emptyText = $(this).attr('data-empty');
-				
-				var source = new Bloodhound({
-				  datumTokenizer: Bloodhound.tokenizers.obj.whitespace($(this).attr('data-display')),
-				  queryTokenizer: Bloodhound.tokenizers.whitespace,
-				  remote: {
-					url: $(this).attr('data-url'),
-					wildcard: '%QUERY'
-				  }
-				});					
-				
-				if (typeof isTemplate != 'undefined') {
-					$(this).typeahead(null, {
-					  name: $(this).attr('id'),
-					  display: $(this).attr('data-display'),
-					  source: source,
-					  templates: {
-						empty: [
-						 emptyText
-						],
-						suggestion: Handlebars.compile(isTemplate)
-					  },				  				  
-					});					
-				} else {
-					$(this).typeahead(null, {
-					  name: $(this).attr('id'),
-					  display: $(this).attr('data-display'),
-					  source: source
-					});					
-				}	
+
+                $(this).typeahead('destroy');
+                var isTemplate = $(this).attr('data-template');
+                var emptyText = $(this).attr('data-empty');
+
+                var source = new Bloodhound({
+                    datumTokenizer: Bloodhound.tokenizers.obj.whitespace($(this).attr('data-display')),
+                    queryTokenizer: Bloodhound.tokenizers.whitespace,
+                    remote: {
+                        url: $(this).attr('data-url'),
+                        wildcard: '%QUERY'
+                    }
+                });
+
+                if (typeof isTemplate != 'undefined') {
+                    $(this).typeahead(null, {
+                        name: $(this).attr('id'),
+                        display: $(this).attr('data-display'),
+                        source: source,
+                        templates: {
+                            empty: [
+                                emptyText
+                            ],
+                            suggestion: Handlebars.compile(isTemplate)
+                        },
+                    });
+                } else {
+                    $(this).typeahead(null, {
+                        name: $(this).attr('id'),
+                        display: $(this).attr('data-display'),
+                        source: source
+                    });
+                }
             });
         }
 
         // "kartik-v/yii2-widget-colorinput"
-        var $hasSpectrum = $(widgetOptionsRoot.widgetItem).find('.spectrum-source');
+        var $hasSpectrum = $widgetItem.find('.spectrum-source');
         if ($hasSpectrum.length > 0) {
             $hasSpectrum.each(function() {
-				var kvPalette=[["rgb(0, 0, 0)","rgb(67, 67, 67)","rgb(102, 102, 102)","rgb(204, 204, 204)","rgb(217, 217, 217)","rgb(255, 255, 255)"],["rgb(152, 0, 0)","rgb(255, 0, 0)","rgb(255, 153, 0)","rgb(255, 255, 0)","rgb(0, 255, 0)","rgb(0, 255, 255)","rgb(74, 134, 232)","rgb(0, 0, 255)","rgb(153, 0, 255)","rgb(255, 0, 255)"],["rgb(230, 184, 175)","rgb(244, 204, 204)","rgb(252, 229, 205)","rgb(255, 242, 204)","rgb(217, 234, 211)","rgb(208, 224, 227)","rgb(201, 218, 248)","rgb(207, 226, 243)","rgb(217, 210, 233)","rgb(234, 209, 220)"],["rgb(221, 126, 107)","rgb(234, 153, 153)","rgb(249, 203, 156)","rgb(255, 229, 153)","rgb(182, 215, 168)","rgb(162, 196, 201)","rgb(164, 194, 244)","rgb(159, 197, 232)","rgb(180, 167, 214)","rgb(213, 166, 189)"],["rgb(204, 65, 37)","rgb(224, 102, 102)","rgb(246, 178, 107)","rgb(255, 217, 102)","rgb(147, 196, 125)","rgb(118, 165, 175)","rgb(109, 158, 235)","rgb(111, 168, 220)","rgb(142, 124, 195)","rgb(194, 123, 160)"],["rgb(166, 28, 0)","rgb(204, 0, 0)","rgb(230, 145, 56)","rgb(241, 194, 50)","rgb(106, 168, 79)","rgb(69, 129, 142)","rgb(60, 120, 216)","rgb(61, 133, 198)","rgb(103, 78, 167)","rgb(166, 77, 121)"],["rgb(91, 15, 0)","rgb(102, 0, 0)","rgb(120, 63, 4)","rgb(127, 96, 0)","rgb(39, 78, 19)","rgb(12, 52, 61)","rgb(28, 69, 135)","rgb(7, 55, 99)","rgb(32, 18, 77)","rgb(76, 17, 48)"]];
-				var spectrum = {"showInput":true,"showInitial":true,"showPalette":true,"showSelectionPalette":true,"showAlpha":true,"allowEmpty":true,"preferredFormat":"hex","theme":"sp-krajee","cancelText":"cancel","chooseText":"choose","clearText":"Clear Color Selection","noColorSelectedText":"No Color Selected","togglePaletteMoreText":"more","togglePaletteLessText":"less","palette":kvPalette};
+                var kvPalette=[["rgb(0, 0, 0)","rgb(67, 67, 67)","rgb(102, 102, 102)","rgb(204, 204, 204)","rgb(217, 217, 217)","rgb(255, 255, 255)"],["rgb(152, 0, 0)","rgb(255, 0, 0)","rgb(255, 153, 0)","rgb(255, 255, 0)","rgb(0, 255, 0)","rgb(0, 255, 255)","rgb(74, 134, 232)","rgb(0, 0, 255)","rgb(153, 0, 255)","rgb(255, 0, 255)"],["rgb(230, 184, 175)","rgb(244, 204, 204)","rgb(252, 229, 205)","rgb(255, 242, 204)","rgb(217, 234, 211)","rgb(208, 224, 227)","rgb(201, 218, 248)","rgb(207, 226, 243)","rgb(217, 210, 233)","rgb(234, 209, 220)"],["rgb(221, 126, 107)","rgb(234, 153, 153)","rgb(249, 203, 156)","rgb(255, 229, 153)","rgb(182, 215, 168)","rgb(162, 196, 201)","rgb(164, 194, 244)","rgb(159, 197, 232)","rgb(180, 167, 214)","rgb(213, 166, 189)"],["rgb(204, 65, 37)","rgb(224, 102, 102)","rgb(246, 178, 107)","rgb(255, 217, 102)","rgb(147, 196, 125)","rgb(118, 165, 175)","rgb(109, 158, 235)","rgb(111, 168, 220)","rgb(142, 124, 195)","rgb(194, 123, 160)"],["rgb(166, 28, 0)","rgb(204, 0, 0)","rgb(230, 145, 56)","rgb(241, 194, 50)","rgb(106, 168, 79)","rgb(69, 129, 142)","rgb(60, 120, 216)","rgb(61, 133, 198)","rgb(103, 78, 167)","rgb(166, 77, 121)"],["rgb(91, 15, 0)","rgb(102, 0, 0)","rgb(120, 63, 4)","rgb(127, 96, 0)","rgb(39, 78, 19)","rgb(12, 52, 61)","rgb(28, 69, 135)","rgb(7, 55, 99)","rgb(32, 18, 77)","rgb(76, 17, 48)"]];
+                var spectrum = {"showInput":true,"showInitial":true,"showPalette":true,"showSelectionPalette":true,"showAlpha":true,"allowEmpty":true,"preferredFormat":"hex","theme":"sp-krajee","cancelText":"cancel","chooseText":"choose","clearText":"Clear Color Selection","noColorSelectedText":"No Color Selected","togglePaletteMoreText":"more","togglePaletteLessText":"less","palette":kvPalette};
                 var id = '#' + $(this).attr('id');
-				var matches = id.match(regexID);
+                var matches = id.match(regexID);
 
-				jQuery(matches[1]+matches[2]+"color").on('change',function(){jQuery(id).val(this.value)});
-				jQuery(id).on('input change',function(e){jQuery(matches[1]+matches[2]+"color").val(this.value);if(e.type=='change'){jQuery(matches[1]+matches[2]+"color").trigger('change');}});
+                jQuery(matches[1]+matches[2]+"color").on('change',function(){jQuery(id).val(this.value)});
+                jQuery(id).on('input change',function(e){jQuery(matches[1]+matches[2]+"color").val(this.value);if(e.type=='change'){jQuery(matches[1]+matches[2]+"color").trigger('change');}});
 
-				jQuery.when(jQuery(id).spectrum(spectrum)).done(function(){jQuery(id).spectrum('set',jQuery(matches[1]+matches[2]+"color").val());
-				jQuery(matches[1]+matches[2]+"color-cont").removeClass('kv-center-loading');});
-				jQuery(id).spectrum(spectrum);
+                jQuery.when(jQuery(id).spectrum(spectrum)).done(function(){jQuery(id).spectrum('set',jQuery(matches[1]+matches[2]+"color").val());
+                    jQuery(matches[1]+matches[2]+"color-cont").removeClass('kv-center-loading');});
+                jQuery(id).spectrum(spectrum);
             });
         }
 
         // "kartik-v/yii2-widget-depdrop"
-        var $hasDepdrop = $(widgetOptionsRoot.widgetItem).find('[data-krajee-depdrop]');
+        var $hasDepdrop = $widgetItem.find('[data-krajee-depdrop]');
         if ($hasDepdrop.length > 0) {
             $hasDepdrop.each(function() {
                 if ($(this).data('select2') === undefined) {
@@ -495,7 +501,7 @@
         }
 
         // "kartik-v/yii2-widget-select2"
-        var $hasSelect2 = $(widgetOptionsRoot.widgetItem).find('[data-krajee-select2]');
+        var $hasSelect2 = $widgetItem.find('[data-krajee-select2]');
         if ($hasSelect2.length > 0) {
             $hasSelect2.each(function() {
                 var id = $(this).attr('id');
@@ -516,7 +522,7 @@
 
                 var s2LoadingFunc = typeof initSelect2Loading != 'undefined' ? initSelect2Loading : initS2Loading;
                 var s2OpenFunc = typeof initSelect2DropStyle != 'undefined' ? initSelect2Loading : initS2Loading;
-                
+
                 $.when($id.select2(configSelect2)).done(s2LoadingFunc(id, '.select2-container--krajee'));
 
                 var kvClose = 'kv_close_' + id.replace(/\-/g, '_');
