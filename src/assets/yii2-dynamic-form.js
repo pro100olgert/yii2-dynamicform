@@ -231,10 +231,10 @@
                         if (typeof widgetsOptions[i] !== "undefined") {
                             identifiers[i] = $elem.closest(widgetsOptions[i].widgetItem).index();
                         }
-                        // old trick
-                        $(".kv-plugin-loading").addClass("hide");
                     }
                 }
+                // old trick
+                $(".kv-plugin-loading").addClass("hide");
 
                 newID = matches[1] + '-' + identifiers.join('-') + '-' + matches[3];
                 $elem.attr('id', newID);
