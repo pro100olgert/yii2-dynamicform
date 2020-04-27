@@ -1,7 +1,8 @@
 /**
  * yii2-dynamic-form
  *
- * A jQuery plugin to clone form elements in a nested manner, maintaining accessibility.
+ * A jQuery plugin to clone form elements in a nested manner, maintaining
+ * accessibility.
  *
  * @author Wanderson Bragança <wanderson.wbc@gmail.com>
  * @contributor Vivek Marakana <vivek.marakana@gmail.com>
@@ -292,7 +293,12 @@
         $(widgetOptionsRoot.widgetItem).each(function(index) {
             var $item = $(this);
             if( $updatedItem !== undefined ) {
-                $item = $item.is($updatedItem) ? $updatedItem : $item.find($updatedItem);
+                if ($item.is($updatedItem)) {
+                    $item = $updatedItem;
+                }
+                else if ($item.find($updatedItem).length > 0) {
+                    $item = $item.find($updatedItem);
+                }
             }
             $item.find('[id],[name]').each(function() {
                 // update "id" attribute
